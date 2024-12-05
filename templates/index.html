@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detección de Billetes</title>
+    <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <style>
+        #loadingScreen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        #previewImage {
+            max-height: 400px;
+            object-fit: contain;
+        }
+
+        #cameraSection {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Pantalla de carga -->
+    <div id="loadingScreen" class="d-none">
+        Procesando la imagen... ⏳
+    </div>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">💵 Detección de Billetes 💵</h1>
+        <div class="card shadow-sm p-4">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="mb-3 text-center">
+                    <h5 class="text-primary">Selecciona una imagen o usa la cámara</h5>
+                    <div class="btn-group mb-3">
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*" required hidden>
+                        <button type="button" class="btn btn-primary" id="selectImageButton">📁 Cargar Imagen</button>
+                        <button type="button" class="btn btn-secondary" id="captureButton">📸 Usar Cámara</button>
+                    </div>
+                </div>
+                <!-- Previsualización de imagen cargada -->
+                <div id="previewContainer" style="display: none;" class="text-center">
+                    <h5 class="mt-3">Imagen Cargada:</h5>
+                    <img id="previewImage" class="img-fluid mt-2" alt="Previsualización de imagen">
+                    <div class="d-grid gap-2 mt-3">
+                        <button type="submit" class="btn btn-success">🔍 Procesar Imagen</button>
+                    </div>
+                </div>
+
+                <!-- Sección para capturar foto desde la cámara -->
+                <div id="cameraSection" class="text-center">
+                    <video id="camera" class="mt-3" autoplay muted style="max-width: 100%;"></video>
+                    <button type="button" class="btn btn-danger mt-3" id="capturePhotoButton">Tomar Foto</button>
+                </div>
+                <canvas id="photoCanvas" style="display: none;"></canvas>
+            </form>
+        </div>
+        <div id="result" class="mt-5" style="display: none;">
+            <div class="row g-4 pb-5">
+                <div class="col-md-6 text-center">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5>Imagen Procesada</h5>
+                        </div>
+                        <div class="card-body">
+                            <img id="processedImage" class="img-fluid" style="max-height: 400px; object-fit: contain;" alt="Imagen procesada">
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-secondary text-white">
+                            <h5>Resultados</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul id="breakdown" class="list-group"></ul>
+                            <h4 id="totalAmount" class="mt-3 text-success"></h4>
+                            <div class="d-grid gap-2 mt-4">
+                                <button id="resetButton" class="btn btn-danger">🔄 Reiniciar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function () {
+            let usingCamera = false;
+
+            // Inicialmente esconder los contenedores
+            $('#loadingScreen').hide();
+            $('#previewContainer').hide();
+
+            // Mostrar el input file al hacer clic en "Cargar Imagen"
+            $('#selectImageButton').on('click', function () {
+                $('#image').click();
+            });
+
+            // Manejar el botón de usar cámara
+            $('#captureButton').on('click', function () {
+                $('#cameraSection').show();
+                usingCamera = true;
+
+                const video = document.getElementById('camera');
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(stream => {
+                        video.srcObject = stream;
+                    })
+                    .catch(err => {
+                        alert('No se pudo acceder a la cámara: ' + err);
+                        $('#cameraSection').hide();
+                    });
+            });
+
+            // Capturar foto desde la cámara
+            $('#capturePhotoButton').on('click', function () {
+                const video = document.getElementById('camera');
+                const canvas = document.getElementById('photoCanvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(blob => {
+                    const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    $('#image')[0].files = dataTransfer.files;
+
+                    // Mostrar la previsualización
+                    const imageUrl = URL.createObjectURL(blob);
+                    $('#previewImage').attr('src', imageUrl);
+                    $('#previewContainer').show();
+                    $('#cameraSection').hide();
+                });
+            });
+
+            // Mostrar la previsualización al cargar una imagen
+            $('#image').on('change', function () {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        $('#previewImage').attr('src', e.target.result);
+                        $('#previewContainer').show();
+                    };
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+
+            // Manejar el envío del formulario
+            $('#uploadForm').on('submit', function (e) {
+                e.preventDefault();
+
+                // Mostrar la pantalla de carga
+                $('#loadingScreen').show();
+
+                const formData = new FormData();
+                const imageInput = $('#image')[0].files[0];
+                formData.append('image', imageInput);
+
+                $.ajax({
+                    url: '/detect',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (data) {
+                        $('#loadingScreen').hide();
+                        if (data.image_url) {
+                            $('#result').show();
+                            $('#processedImage').attr('src', `${data.image_url}?t=${new Date().getTime()}`);
+
+                            const breakdownList = $('#breakdown');
+                            breakdownList.empty();
+                            data.breakdown.forEach(item => {
+                                breakdownList.append(
+                                    `<li class="list-group-item">${item.count} billete(s) de ${item.denomination}</li>`
+                                );
+                            });
+
+                            $('#totalAmount').text(`Monto TOTAL: $${data.total} pesos`);
+                        }
+                    },
+                    error: function (error) {
+                        $('#loadingScreen').hide();
+                        alert("Error procesando la imagen. Intente nuevamente.");
+                    }
+                });
+            });
+
+            // Manejar el reinicio
+            $('#resetButton').on('click', function () {
+                $('#result').hide();
+                $('#uploadForm')[0].reset();
+                $('#previewContainer').hide();
+                $('#cameraSection').hide();
+            });
+        });
+    </script>
+</body>
+</html>
