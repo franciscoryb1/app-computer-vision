@@ -86,6 +86,17 @@
                 $('#image').click();
             });
 
+            // Manejar el evento de cambio en el input de archivo
+            $('#image').on('change', function () {
+                const file = this.files[0];
+                if (file) {
+                    const imageUrl = URL.createObjectURL(file);
+                    $('#previewImage').attr('src', imageUrl);
+                    $('#previewContainer').show();
+                    $('#cameraSection').hide();
+                }
+            });
+
             // Manejar el botón de usar cámara
             $('#captureButton').on('click', function () {
                 $('#cameraSection').show();
@@ -120,6 +131,11 @@
                     stopCamera(); // Detener la cámara
                 });
             });
+            
+            $('#resetButton').on('click', function () {
+                location.reload();
+            });
+
 
             // Enviar el formulario
             $('#uploadForm').on('submit', function (e) {
@@ -183,6 +199,7 @@
                     currentStream.getTracks().forEach(track => track.stop());
                 }
             }
+            
         });
     </script>
 </body>
