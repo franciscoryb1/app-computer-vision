@@ -7,11 +7,9 @@ from collections import Counter
 # Configuración inicial
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
-# Cargar el modelo YOLOv8 entrenado
-model_path = "models/yolov8n_trained.pt"  # Ruta al modelo entrenado
+model_path = "models/yolov8n_trained.pt"
 model = YOLO(model_path)
 
-# Configurar las denominaciones de los billetes
 class_to_value = {
     "100_pesos": 100,
     "10_pesos": 10,
@@ -46,7 +44,7 @@ def detect_money():
     class_names = results[0].names
     class_counts = Counter(class_names[int(cls)] for cls in classes_detected)
     
-    # Calcular el dinero total
+    # Calcular el total
     total_amount = 0
     breakdown = []
     for cls, count in class_counts.items():
