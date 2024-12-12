@@ -65,8 +65,15 @@
                             <h5>Resultados</h5>
                         </div>
                         <div class="card-body">
-                            <ul id="breakdown" class="list-group"></ul>
-                            <h4 id="totalAmount" class="mt-3 text-success"></h4>
+                            <h6 class="text-primary">Cotización del dólar utilizada: <span id="cotizacionDolar"></span></h6>
+                            <h5 class="mt-3">Billetes en pesos:</h5>
+                            <ul id="breakdownPesos" class="list-group mb-3"></ul>
+                            <h5>Billetes en dólares:</h5>
+                            <ul id="breakdownDolares" class="list-group mb-3"></ul>
+                            <h5 class="text-success">Totales:</h5>
+                            <p id="totalPesos" class="mb-1"></p>
+                            <p id="totalDolares" class="mb-1"></p>
+                            <p id="totalHomogeneo" class="mb-3"></p>
                             <div class="d-grid gap-2 mt-4">
                                 <button id="resetButton" class="btn btn-danger">🔄 Reiniciar</button>
                             </div>
@@ -78,66 +85,23 @@
     </div>
     <script>
         $(document).ready(function () {
-            let currentStream = null;
-            let currentDeviceId = null;
-
-            // Mostrar el input file al hacer clic en "Cargar Imagen"
             $('#selectImageButton').on('click', function () {
                 $('#image').click();
             });
 
-            // Manejar el evento de cambio en el input de archivo
             $('#image').on('change', function () {
                 const file = this.files[0];
                 if (file) {
                     const imageUrl = URL.createObjectURL(file);
                     $('#previewImage').attr('src', imageUrl);
                     $('#previewContainer').show();
-                    $('#cameraSection').hide();
                 }
             });
 
-            // Manejar el botón de usar cámara
-            $('#captureButton').on('click', function () {
-                $('#cameraSection').show();
-                startCamera(false); // Iniciar con la cámara trasera por defecto
-            });
-
-            // Cambiar entre cámaras
-            $('#switchCameraButton').on('click', function () {
-                stopCamera();
-                startCamera(!currentDeviceId); // Cambiar entre cámaras
-            });
-
-            // Capturar foto desde la cámara
-            $('#capturePhotoButton').on('click', function () {
-                const video = document.getElementById('camera');
-                const canvas = document.getElementById('photoCanvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                const context = canvas.getContext('2d');
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                canvas.toBlob(blob => {
-                    const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
-                    const dataTransfer = new DataTransfer();
-                    dataTransfer.items.add(file);
-                    $('#image')[0].files = dataTransfer.files;
-
-                    // Mostrar la previsualización
-                    const imageUrl = URL.createObjectURL(blob);
-                    $('#previewImage').attr('src', imageUrl);
-                    $('#previewContainer').show();
-                    $('#cameraSection').hide();
-                    stopCamera(); // Detener la cámara
-                });
-            });
-            
             $('#resetButton').on('click', function () {
                 location.reload();
             });
 
-
-            // Enviar el formulario
             $('#uploadForm').on('submit', function (e) {
                 e.preventDefault();
 
@@ -152,54 +116,28 @@
                     processData: false,
                     contentType: false,
                     success: function (data) {
-                        if (data.image_url) {
-                            $('#result').show();
-                            $('#processedImage').attr('src', `${data.image_url}?t=${new Date().getTime()}`);
+                        $('#result').show();
+                        $('#processedImage').attr('src', `${data.image_url}?t=${new Date().getTime()}`);
 
-                            const breakdownList = $('#breakdown');
-                            breakdownList.empty();
-                            data.breakdown.forEach(item => {
-                                breakdownList.append(
-                                    `<li class="list-group-item">${item.count} billete(s) de ${item.denomination}</li>`
-                                );
-                            });
+                        $('#cotizacionDolar').text(`$${data.cotizacion_dolar}`);
+                        $('#breakdownPesos').empty();
+                        data.breakdown_pesos.forEach(item => {
+                            $('#breakdownPesos').append(`<li class="list-group-item">${item.count} billete(s) de ${item.denomination}</li>`);
+                        });
+                        $('#breakdownDolares').empty();
+                        data.breakdown_dolares.forEach(item => {
+                            $('#breakdownDolares').append(`<li class="list-group-item">${item.count} billete(s) de ${item.denomination}</li>`);
+                        });
 
-                            $('#totalAmount').text(`Monto TOTAL: $${data.total} pesos`);
-                        }
+                        $('#totalPesos').text(`Total en pesos: $${data.total_pesos}`);
+                        $('#totalDolares').text(`Total en dólares: U$${data.total_dolares}`);
+                        $('#totalHomogeneo').text(`Total homogeneizado en pesos: $${data.total_homogeneo}`);
                     },
                     error: function () {
                         alert('Error procesando la imagen.');
                     }
                 });
             });
-
-            // Iniciar cámara
-            function startCamera(useFront) {
-                const constraints = {
-                    video: {
-                        facingMode: useFront ? 'user' : 'environment'
-                    }
-                };
-
-                navigator.mediaDevices.getUserMedia(constraints)
-                    .then(stream => {
-                        currentStream = stream;
-                        currentDeviceId = useFront;
-                        const video = document.getElementById('camera');
-                        video.srcObject = stream;
-                    })
-                    .catch(err => {
-                        alert('No se pudo acceder a la cámara. Verifica los permisos de tu dispositivo.');
-                    });
-            }
-
-            // Detener cámara
-            function stopCamera() {
-                if (currentStream) {
-                    currentStream.getTracks().forEach(track => track.stop());
-                }
-            }
-            
         });
     </script>
 </body>
