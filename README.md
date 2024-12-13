@@ -1,4 +1,4 @@
-# 💵 Detección y Clasificación de Billetes con Flask y YOLOv8 💵
+# 💵 Detección y Clasificación de Billetes con YOLOv8 💵
 
 Proyecto de detección y clasificación de billetes basado en **YOLOv8**. 
 Esta aplicación identifica billetes en imágenes, los clasifica por denominación y moneda, y calcula el monto total en pesos argentinos o dólares. 🚀
@@ -10,9 +10,7 @@ Esta aplicación identifica billetes en imágenes, los clasifica por denominaci�
 ---
 
 
-# Pasos para desplegar la aplicación
-
-Sigue estos pasos para ejecutar la aplicación en tu entorno local:
+# Pasos para desplegar la aplicación de forma local
 
 1. **Clonar el repositorio**
    ```bash
@@ -35,8 +33,7 @@ Sigue estos pasos para ejecutar la aplicación en tu entorno local:
      source .env/bin/activate
      ```
 
-4. **Instalar los requerimientos**
-   Instala las dependencias necesarias para el proyecto:
+4. **Instala las dependencias necesarias para el proyecto**   
    ```bash
    pip install -r requirements.txt
    ```
